@@ -3,7 +3,7 @@ local r = component.proxy(component.list("redstone")())
 
 DOWN, UP, BACK, FRONT, RIGHT, LEFT  = 0, 1, 2, 3, 4, 5
 local REDSTONE_CONTROL_SIDE = DOWN
-local MAX_DAMAGE = 0.75
+local MAX_DMG = 0.75
 local COOLANT, FUEL = true, false
 local ON, PULSE, OFF = 15, 14, 0
 
@@ -57,10 +57,10 @@ end
 COOLANT_SLOTS, COOLANTS, FUELS = toMap(COOLANT_SLOTS), toMap(COOLANTS), toMap(FUELS)
 
 -- Detect system, reactor and IC side
-local systemSide, reactorSide, icSide
+local sysSide, reactorSide, icSide
 for s = 0, 5 do
   local n = t.getInventoryName(s)
-  if n == "tile.appliedenergistics2.BlockInterface" then systemSide = s end
+  if n == "tile.appliedenergistics2.BlockInterface" then sysSide = s end
   if n == "blockReactorChamber" then reactorSide = s
   elseif r.getComparatorInput(s) > 0 then icSide = s end
 end
@@ -74,14 +74,14 @@ local nextImport, nextExport = 0, 0
 ---@return boolean success
 local function import(index, type)
   nextImport = (nextImport + 1) % 3
-  return t.transferItem(systemSide, reactorSide, 1, type and nextImport + 1 or 4, index + 1)
+  return t.transferItem(sysSide, reactorSide, 1, type and nextImport + 1 or 4, index + 1)
 end
 
 ---Export item from reactor to system
 ---@param index integer reactor slot index (0-based)
 local function export(index)
   nextExport = (nextExport + 1) % 4
-  t.transferItem(reactorSide, systemSide, 1, index + 1, nextExport + 5)
+  t.transferItem(reactorSide, sysSide, 1, index + 1, nextExport + 5)
 end
 
 local prevState
@@ -101,7 +101,7 @@ local cMissing, reactorItems, slept, item, tick
 while true do
   t.getInventoryName(0)
   tick = os.time() * 1000 / 60 / 60
-  if tick >= nextTick then
+  if tick >= nextTick or math.abs(tick - nextTick) > 40 then
     nextTick = tick - (tick % 20) + 24
     cMissing = 0
     reactorItems = t.getAllStacks(reactorSide).getAll()
@@ -117,7 +117,7 @@ while true do
         end
       elseif COOLANT_SLOTS[i] then
         if COOLANTS[item.label] then
-          if item.damage / item.maxDamage > MAX_DAMAGE then
+          if item.damage / item.maxDamage > MAX_DMG then
             setState(OFF)
             if not slept then
               for _ = 1, 6 do t.getInventoryName(0) end
